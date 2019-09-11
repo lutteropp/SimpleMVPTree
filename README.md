@@ -3,6 +3,8 @@ An efficient data structure for distance queries for high-dimensional data in me
 
 My implementation is based on the "two-level mvp-tree that keeps all vantage points in a single directory", which performed best in the experiments in the paper referenced below.
 
+Using the SimpleMVPTree in your C++ project is very simple. Just include the `SimpleMVPTree.hpp` header.
+
 # Basic Usage
 ```c++
 #include "SimpleMVPTree.hpp"
