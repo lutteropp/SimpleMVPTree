@@ -1,5 +1,5 @@
 # SimpleMVPTree
-An efficient data structure for distance queries for high-dimensional data in metric spaces.
+An efficient data structure for nearest neighbor queries for high-dimensional data in metric spaces.
 
 My implementation is based on the "two-level mvp-tree that keeps all vantage points in a single directory", which performed best in the experiments in the paper referenced below.
 
