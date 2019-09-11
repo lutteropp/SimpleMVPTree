@@ -19,8 +19,8 @@ double myDistance(const MyClass& a, const MyClass& b) {
 void demonstrateUsage() {
   std::vector<MyClass> myData;
   // ... fill myData with elements.
-  SimpleMVPTree<MyClass> mvp(myData, myDistance);
   
+  SimpleMVPTree<MyClass> mvp(myData, myDistance);
   MyClass query;
   // ... define the query object.
   
