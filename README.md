@@ -22,7 +22,9 @@ void demonstrateUsage() {
   std::vector<MyClass> myData;
   // ... fill myData with elements.
   
+  // build the data structure
   SimpleMVPTree<MyClass> mvp(myData, myDistance);
+  
   MyClass query;
   // ... define the query object.
   
