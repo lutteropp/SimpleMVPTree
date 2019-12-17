@@ -57,22 +57,24 @@ public:
 		search(root.get(), target, vp_dist, 0);
 
 		// Uncomment to check if the result is correct (this is very slow!)
-		/*size_t min_idx = 0;
-		 double min = std::numeric_limits<double>::infinity();
-		 for (size_t i = 0; i < _items.size(); ++i) {
-		 double dist = distance(target, _data[i]);
-		 if (dist < min) {
-		 min = dist;
-		 min_idx = i;
-		 }
-		 }
-		 if (_tau != min) {
-		 std::cout << "ERROR!!! THE RESULT IS WRONG!!!\n";
-		 std::cout << "_tau: " << _tau << "\n";
-		 std::cout << "min: " << min << "\n";
-		 std::cout << "witness: " << _data[min_idx] << "\n";
-		 throw std::runtime_error("Stopping now");
-		 }*/
+		/*
+		size_t min_idx = 0;
+		double min = std::numeric_limits<double>::infinity();
+		for (size_t i = 0; i < items.size(); ++i) {
+			double dist = distance(target, data[i]);
+			if (dist < min) {
+				min = dist;
+				min_idx = i;
+			}
+		}
+		if (tau != min) {
+			std::cout << "ERROR!!! THE RESULT IS WRONG!!!\n";
+			std::cout << "_tau: " << tau << "\n";
+			std::cout << "min: " << min << "\n";
+			std::cout << "witness: " << data[min_idx] << "\n";
+			throw std::runtime_error("Stopping now");
+		}
+		*/
 
 		return tau;
 	}
