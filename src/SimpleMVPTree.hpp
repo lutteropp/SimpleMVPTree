@@ -21,12 +21,11 @@
 #include <unordered_set>
 #include <vector>
 
-
 template<typename T>
 class SimpleMVPTree {
 public:
 	SimpleMVPTree(const std::vector<T>& data, std::function<double(const T&, const T&)> dist) :
-			_data(data), _tau(std::numeric_limits<double>::max()), distance(dist), _root(NULL) {
+			_data(data), _tau(std::numeric_limits<double>::max()), distance(dist), _root(nullptr) {
 		_num_vantage_points = ceil(log(data.size() / 2));
 		_vp_indices.resize(_num_vantage_points);
 		_distToVP.resize(data.size());
@@ -39,10 +38,6 @@ public:
 		}
 
 		_root = buildFromPoints(0, _items.size());
-	}
-
-	~SimpleMVPTree() {
-		delete _root;
 	}
 
 	double search_mindist(const T& target) {
@@ -59,25 +54,25 @@ public:
 				return 0;
 			}
 		}
-		search(_root, target, vp_dist, 0);
+		search(_root.get(), target, vp_dist, 0);
 
 		// Uncomment to check if the result is correct (this is very slow!)
 		/*size_t min_idx = 0;
-		double min = std::numeric_limits<double>::infinity();
-		for (size_t i = 0; i < _items.size(); ++i) {
-			double dist = distance(target, _data[i]);
-			if (dist < min) {
-				min = dist;
-				min_idx = i;
-			}
-		}
-		if (_tau != min) {
-			std::cout << "ERROR!!! THE RESULT IS WRONG!!!\n";
-			std::cout << "_tau: " << _tau << "\n";
-			std::cout << "min: " << min << "\n";
-			std::cout << "witness: " << _data[min_idx] << "\n";
-			throw std::runtime_error("Stopping now");
-		}*/
+		 double min = std::numeric_limits<double>::infinity();
+		 for (size_t i = 0; i < _items.size(); ++i) {
+		 double dist = distance(target, _data[i]);
+		 if (dist < min) {
+		 min = dist;
+		 min_idx = i;
+		 }
+		 }
+		 if (_tau != min) {
+		 std::cout << "ERROR!!! THE RESULT IS WRONG!!!\n";
+		 std::cout << "_tau: " << _tau << "\n";
+		 std::cout << "min: " << min << "\n";
+		 std::cout << "witness: " << _data[min_idx] << "\n";
+		 throw std::runtime_error("Stopping now");
+		 }*/
 
 		return _tau;
 	}
@@ -97,15 +92,15 @@ private:
 	std::vector<std::vector<double> > _distToVP;
 	std::function<double(const T&, const T&)> distance;
 
-	typedef struct DirectoryNode {
-		DirectoryNode* left;
-		DirectoryNode* right;
+	struct DirectoryNode {
+		std::unique_ptr<DirectoryNode> left;
+		std::unique_ptr<DirectoryNode> right;
 		unsigned int s1, e1;
 		unsigned int s2, e2;
 		double threshold; // median distance
-	} DirectoryNode;
+	};
 
-	DirectoryNode* _root;
+	std::unique_ptr<DirectoryNode> _root;
 
 	struct DistanceComparator {
 		const std::vector<std::vector<double> >& _distToVP;
@@ -154,8 +149,8 @@ private:
 		return vpPoint;
 	}
 
-	DirectoryNode* makeDirectory(unsigned int lower, unsigned int upper, unsigned int actVPIndex) {
-		DirectoryNode* node = new DirectoryNode();
+	std::unique_ptr<DirectoryNode> makeDirectory(unsigned int lower, unsigned int upper, unsigned int actVPIndex) {
+		std::unique_ptr<DirectoryNode> node = std::make_unique<DirectoryNode>();
 		if (lower >= upper) {
 			return node;
 		}
@@ -177,8 +172,8 @@ private:
 		return node;
 	}
 
-	DirectoryNode* buildFromPoints(unsigned int lower, unsigned int upper) {
-		DirectoryNode* root = new DirectoryNode();
+	std::unique_ptr<DirectoryNode> buildFromPoints(unsigned int lower, unsigned int upper) {
+		std::unique_ptr<DirectoryNode> root = std::make_unique<DirectoryNode>();
 		if (upper == lower) {
 			return root;
 		}
@@ -261,7 +256,7 @@ private:
 	}
 
 	void search(DirectoryNode* node, T target, const std::vector<double>& vp_dist, unsigned int actVPIdx) {
-		if (node == NULL) {
+		if (node == nullptr) {
 			return;
 		}
 		if (actVPIdx == _num_vantage_points - 1) {
@@ -273,10 +268,10 @@ private:
 			}
 		} else { // more search in directory structure
 			if (vp_dist[actVPIdx] <= node->threshold + _tau) { // search in left side
-				search(node->left, target, vp_dist, actVPIdx + 1);
+				search(node->left.get(), target, vp_dist, actVPIdx + 1);
 			}
 			if (vp_dist[actVPIdx] + _tau >= node->threshold) { // search in right side
-				search(node->right, target, vp_dist, actVPIdx + 1);
+				search(node->right.get(), target, vp_dist, actVPIdx + 1);
 			}
 		}
 	}
