@@ -5,6 +5,12 @@ My implementation is based on the "two-level mvp-tree that keeps all vantage poi
 
 Using the SimpleMVPTree in your C++ project is very simple. Just include the `SimpleMVPTree.hpp` header.
 
+# Please Note
+The distance function `myDistance(a, b)` provided by you must be a metric! This means, the following conditions must hold:
+1. `myDistance(a, b) >= 0` and `myDistance(a,b) == 0, if and only if a == b` for all a, b
+2. `myDistance(a, b) == myDistance(b, a)` for all a, b
+3. `myDistance(a, c) <= myDistance(a, b) + myDistance(b, c)` for all a, b, c
+
 # Basic Usage
 ```c++
 #include "SimpleMVPTree.hpp"
