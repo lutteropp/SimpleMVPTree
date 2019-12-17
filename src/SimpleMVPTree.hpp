@@ -25,36 +25,36 @@ template<typename T>
 class SimpleMVPTree {
 public:
 	SimpleMVPTree(const std::vector<T>& data, std::function<double(const T&, const T&)> dist) :
-			_data(data), _tau(std::numeric_limits<double>::max()), distance(dist), _root(nullptr) {
-		_num_vantage_points = ceil(log(data.size() / 2));
-		_vp_indices.resize(_num_vantage_points);
-		_distToVP.resize(data.size());
-		for (size_t i = 0; i < _distToVP.size(); ++i) {
-			_distToVP[i].resize(_num_vantage_points);
+			data { data }, tau { std::numeric_limits<double>::max() }, distance { dist }, root { nullptr } {
+		num_vantage_points = ceil(log(data.size() / 2));
+		vp_indices.resize(num_vantage_points);
+		distToVP.resize(data.size());
+		for (size_t i = 0; i < distToVP.size(); ++i) {
+			distToVP[i].resize(num_vantage_points);
 		}
-		_items.resize(data.size());
-		for (size_t i = 0; i < _items.size(); ++i) {
-			_items[i] = i;
+		items.resize(data.size());
+		for (size_t i = 0; i < items.size(); ++i) {
+			items[i] = i;
 		}
 
-		_root = buildFromPoints(0, _items.size());
+		root = buildFromPoints(0, items.size());
 	}
 
 	double search_mindist(const T& target) {
-		_tau = std::numeric_limits<double>::max();
+		tau = std::numeric_limits<double>::max();
 
-		std::vector<double> vp_dist(_num_vantage_points);
-		for (size_t i = 0; i < _num_vantage_points; ++i) {
-			vp_dist[i] = distance(_data[_vp_indices[i]], target);
-			if (vp_dist[i] < _tau) {
-				_tau = vp_dist[i];
-				_closest_idx = _vp_indices[i];
+		std::vector<double> vp_dist(num_vantage_points);
+		for (size_t i = 0; i < num_vantage_points; ++i) {
+			vp_dist[i] = distance(data[vp_indices[i]], target);
+			if (vp_dist[i] < tau) {
+				tau = vp_dist[i];
+				closest_idx = vp_indices[i];
 			}
-			if (_tau == 0) {
+			if (tau == 0) {
 				return 0;
 			}
 		}
-		search(_root.get(), target, vp_dist, 0);
+		search(root.get(), target, vp_dist, 0);
 
 		// Uncomment to check if the result is correct (this is very slow!)
 		/*size_t min_idx = 0;
@@ -74,24 +74,15 @@ public:
 		 throw std::runtime_error("Stopping now");
 		 }*/
 
-		return _tau;
+		return tau;
 	}
 
 	T search_mindist_elem(const T& target) {
 		search_mindist(target);
-		return _data[_closest_idx];
+		return data[closest_idx];
 	}
 
 private:
-	unsigned int _num_vantage_points;
-	const std::vector<T>& _data;
-	std::vector<unsigned int> _items;
-	double _tau;
-	size_t _closest_idx;
-	std::vector<unsigned int> _vp_indices;
-	std::vector<std::vector<double> > _distToVP;
-	std::function<double(const T&, const T&)> distance;
-
 	struct DirectoryNode {
 		std::unique_ptr<DirectoryNode> left;
 		std::unique_ptr<DirectoryNode> right;
@@ -100,19 +91,15 @@ private:
 		double threshold; // median distance
 	};
 
-	std::unique_ptr<DirectoryNode> _root;
-
-	struct DistanceComparator {
-		const std::vector<std::vector<double> >& _distToVP;
-		unsigned int _vpIdx;
-
-		DistanceComparator(const std::vector<std::vector<double> >& distToVP, unsigned int vpIdx) :
-				_distToVP(distToVP), _vpIdx(vpIdx) {
-		}
-		bool operator()(const unsigned int& a, const unsigned int& b) {
-			return _distToVP[a][_vpIdx] < _distToVP[b][_vpIdx];
-		}
-	};
+	unsigned int num_vantage_points;
+	size_t closest_idx;
+	double tau;
+	std::function<double(const T&, const T&)> distance;
+	std::unique_ptr<DirectoryNode> root;
+	const std::vector<T>& data;
+	std::vector<unsigned int> items;
+	std::vector<unsigned int> vp_indices;
+	std::vector<std::vector<double> > distToVP;
 
 	unsigned int findVantagePoint(unsigned int lower, unsigned int upper) {
 		// chose a random node
@@ -140,7 +127,7 @@ private:
 		}
 
 		for (unsigned int i : samples) {
-			double dist = distance(_data[_items[cand]], _data[_items[i]]);
+			double dist = distance(data[items[cand]], data[items[i]]);
 			if (dist > maxDist) {
 				maxDist = dist;
 				vpPoint = i;
@@ -156,15 +143,16 @@ private:
 		}
 
 		unsigned int median = (upper + lower) / 2;
-		std::nth_element(_items.begin() + lower, _items.begin() + median, _items.begin() + upper,
-				DistanceComparator(_distToVP, actVPIndex));
+		std::nth_element(items.begin() + lower, items.begin() + median, items.begin() + upper, [&](unsigned int i, unsigned int j) {
+			return distToVP[i][actVPIndex] < distToVP[j][actVPIndex];
+		});
 		node->s1 = lower;
 		node->e1 = median;
 		node->s2 = median;
 		node->e2 = upper;
-		node->threshold = _distToVP[_items[median]][actVPIndex];
+		node->threshold = distToVP[items[median]][actVPIndex];
 
-		if (actVPIndex < _num_vantage_points - 1) {
+		if (actVPIndex < num_vantage_points - 1) {
 			node->left = makeDirectory(node->s1, node->e1, actVPIndex + 1);
 			node->right = makeDirectory(node->s2, node->e2, actVPIndex + 1);
 		}
@@ -185,48 +173,50 @@ private:
 		// first Vantage point is a bit different from the rest:
 		unsigned int vp = findVantagePoint(0, upper);
 
-		_vp_indices[0] = _items[vp];
-		std::swap(_items[lower], _items[vp]);
+		vp_indices[0] = items[vp];
+		std::swap(items[lower], items[vp]);
 		for (size_t j = lower + 1; j < upper; ++j) {
-			double dist = distance(_data[_items[j]], _data[_items[lower]]);
-			_distToVP[_items[j]][0] = dist;
+			double dist = distance(data[items[j]], data[items[lower]]);
+			distToVP[items[j]][0] = dist;
 			if (dist > maxDist) {
 				maxDist = dist;
-				maxDistIdx = _items[j];
+				maxDistIdx = items[j];
 			}
 		}
 		// select remaining Vantage points
-		for (size_t i = 1; i < _num_vantage_points; ++i) {
+		for (size_t i = 1; i < num_vantage_points; ++i) {
 			unsigned int vp = maxDistIdx;
-			_vp_indices[i] = _items[vp];
-			std::swap(_items[lower + i], _items[vp]);
+			vp_indices[i] = items[vp];
+			std::swap(items[lower + i], items[vp]);
 			maxDist = 0;
 			maxDistIdx = 0;
 			for (size_t j = lower + i + 1; j < upper; ++j) {
-				double dist = distance(_data[_items[j]], _data[_items[lower + i]]);
-				_distToVP[_items[j]][i] = dist;
+				double dist = distance(data[items[j]], data[items[lower + i]]);
+				distToVP[items[j]][i] = dist;
 				// look at the minimum distance from vantage points so far
 				for (size_t k = 1; k < i; ++k) {
-					dist = std::min(dist, _distToVP[_items[j]][k]);
+					dist = std::min(dist, distToVP[items[j]][k]);
 				}
 				if (dist > maxDist) {
 					maxDist = dist;
-					maxDistIdx = _items[j];
+					maxDistIdx = items[j];
 				}
 			}
 		}
 		// reorder the items and store it in the directory.
-		unsigned int median = (upper + lower + _num_vantage_points) / 2;
+		unsigned int median = (upper + lower + num_vantage_points) / 2;
 		// partition around the median distance from first VP
-		std::nth_element(_items.begin() + lower + _num_vantage_points, _items.begin() + median, _items.begin() + upper,
-				DistanceComparator(_distToVP, actVPIndex));
-		root->s1 = lower + _num_vantage_points;
+		std::nth_element(items.begin() + lower + num_vantage_points, items.begin() + median, items.begin() + upper,
+				[&](unsigned int i, unsigned int j) {
+					return distToVP[i][actVPIndex] < distToVP[j][actVPIndex];
+				});
+		root->s1 = lower + num_vantage_points;
 		root->e1 = median;
 		root->s2 = median;
 		root->e2 = upper;
-		root->threshold = _distToVP[_items[median]][actVPIndex];
+		root->threshold = distToVP[items[median]][actVPIndex];
 
-		if (actVPIndex < _num_vantage_points - 1) {
+		if (actVPIndex < num_vantage_points - 1) {
 			root->left = makeDirectory(root->s1, root->e1, actVPIndex + 1);
 			root->right = makeDirectory(root->s2, root->e2, actVPIndex + 1);
 		}
@@ -236,19 +226,19 @@ private:
 	void iterate(T target, const std::vector<double>& vp_dist, unsigned int lower, unsigned int upper) {
 		for (size_t i = lower; i < upper; ++i) {
 			bool okay = true;
-			for (size_t j = 0; j < _num_vantage_points; ++j) {
-				if ((vp_dist[j] > _distToVP[_items[i]][j] + _tau) || (_distToVP[_items[i]][j] > vp_dist[j] + _tau)) {
+			for (size_t j = 0; j < num_vantage_points; ++j) {
+				if ((vp_dist[j] > distToVP[items[i]][j] + tau) || (distToVP[items[i]][j] > vp_dist[j] + tau)) {
 					okay = false;
 					break;
 				}
 			}
 			if (okay) {
-				double dist = distance(_data[_items[i]], target);
-				if (dist < _tau) {
-					_tau = dist;
-					_closest_idx = _items[i];
+				double dist = distance(data[items[i]], target);
+				if (dist < tau) {
+					tau = dist;
+					closest_idx = items[i];
 				}
-				if (_tau == 0) {
+				if (tau == 0) {
 					return;
 				}
 			}
@@ -259,18 +249,18 @@ private:
 		if (node == nullptr) {
 			return;
 		}
-		if (actVPIdx == _num_vantage_points - 1) {
-			if (vp_dist[actVPIdx] <= node->threshold + _tau) { // search in left side
+		if (actVPIdx == num_vantage_points - 1) {
+			if (vp_dist[actVPIdx] <= node->threshold + tau) { // search in left side
 				iterate(target, vp_dist, node->s1, node->e1);
 			}
-			if (vp_dist[actVPIdx] + _tau >= node->threshold) { // search in right side
+			if (vp_dist[actVPIdx] + tau >= node->threshold) { // search in right side
 				iterate(target, vp_dist, node->s2, node->e2);
 			}
 		} else { // more search in directory structure
-			if (vp_dist[actVPIdx] <= node->threshold + _tau) { // search in left side
+			if (vp_dist[actVPIdx] <= node->threshold + tau) { // search in left side
 				search(node->left.get(), target, vp_dist, actVPIdx + 1);
 			}
-			if (vp_dist[actVPIdx] + _tau >= node->threshold) { // search in right side
+			if (vp_dist[actVPIdx] + tau >= node->threshold) { // search in right side
 				search(node->right.get(), target, vp_dist, actVPIdx + 1);
 			}
 		}
